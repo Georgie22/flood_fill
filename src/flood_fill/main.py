@@ -30,7 +30,17 @@ def check_point_in_image(seed: Type[SeedPoint], image_shape: tuple) -> bool:
 def span_left(image: NDArray, seed: Type[SeedPoint], old_value: int, new_value: int) -> tuple[int, NDArray]:
 
     """
-    Fill the scan line to the left of the seed point and return the image and the left-most filled position
+    Fill the scan line to the left of the seed point.
+
+    Parameters: 
+        image - 2D binary numpy array
+        seed - starting position on scanline
+        old_value - value to be replaced in fill
+        new_value - value to fill with
+
+    Returns:
+        lj - position of the left-most filled pixel in the scanline
+        image - image with scanline filled to the left of the seed
     """
 
     lj = seed.j
@@ -47,7 +57,17 @@ def span_left(image: NDArray, seed: Type[SeedPoint], old_value: int, new_value: 
 def span_right(image: NDArray, seed: Type[SeedPoint], old_value: int, new_value: int) -> tuple[int, NDArray]:
 
     """
-    Fill the scanline to the right of the seed point and return the image and the right-most filled position
+    Fill the scanline to the right of the seed point (including seedpoint)
+
+    Parameters:
+        image - 2D binary numpy array
+        seed - starting position on scanline
+        old_value - value to be replaced in fill
+        new_value - value to fill with
+
+    Return:
+        (seed.j-1) - poaition of right-most filled pixel in scanline
+        image - image with scanline filled to the right of the seed
     """
 
     while check_point_in_image(seed, image.shape) and image[seed.i, seed.j] == old_value:
@@ -57,35 +77,70 @@ def span_right(image: NDArray, seed: Type[SeedPoint], old_value: int, new_value:
     return seed.j-1, image
     
 
-def seed_search(lj, rj, i, stack):
+def seed_search(image: NDArray, lj: int, rj: int, i: int, stack: Type[deque], old_value:int) -> None:
 
     """
-    Search for a seed point in the an adjacent row
+    Search for a seed point in the an adjacent scanline (row) and add to stack
+
+    Parameters:
+        image - binary numpy array
+        lj - in previous scanline, what was the leftmost filled position
+        rj - in the previous scanline, what was the rightmost filled position
+        i - row index to search for seed (+/- 1 from previous scanline)
+        stack - stack storing scanline seeds
+        old_value - value to be replaced in fill
     """
-    pass
+
+    seed_added = False
+    for j in range(lj, rj+1):
+        seed = SeedPoint(i, j)
+        if not check_point_in_image(seed, image.shape) or image[seed.i, seed.j] != old_value:
+            seed_added = False
+        elif not seed_added:
+            stack.append(seed)
+            seed_added = True
+
+    return stack
 
 
 def span_fill(image: NDArray, initial_seed: Type[SeedPoint]) -> NDArray:
 
     """
+    Flood fill a 2D binary array from a seed point - one scanline at a time.
+
+    Parameters:
+        image - 2D binary numpy array
+        initial seed - starting position for fill
+
+    Returns:
+        image - filled 
     """
 
     # initialise stack
     stack = deque()
+
     if check_point_in_image(initial_seed, image.shape):
         stack.append(initial_seed)
     else:
         return IndexError
 
-    # initialise values
+    # initialise fill values
     old_value = image[initial_seed.i, initial_seed.j]
     new_value = 1
 
     # fill loop
     while len(stack) != 0:
+        # scanline seed
         seed = stack.pop()
+
+        # scanline fill
         lj, image = span_left(image, seed, old_value, new_value)
         rj, image = span_right(image, seed, old_value, new_value)
+
+        # search for seeds in adjacent scanlines
+
+        stack = seed_search(image, lj, rj, seed.i+1, stack, old_value)
+        stack = seed_search(image, lj, rj, seed.i-1, stack, old_value)
 
     return image
 
@@ -95,7 +150,10 @@ def main():
 
     # create dummy image
     image = np.zeros((100,100))
-    image[:, 15] = 1
+    image[:, 25] = 1
+    image[:, 75] = 1
+    image[25, :] = 1
+    image[75, :] = 1
     plt.imsave("original.png", image)
 
     initial_seed = SeedPoint(50,50)
