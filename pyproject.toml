@@ -1,0 +1,30 @@
+[project]
+name = "flood-fill"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Georgie22", email = "georgina@cooperteam.co.uk" }
+]
+dependencies = [
+    "pillow>=10.3.0",
+    "numpy>=1.26.4",
+    "ruff>=0.4.7",
+    "matplotlib>=3.9.0",
+    "pytest>=8.2.1",
+]
+readme = "README.md"
+requires-python = ">= 3.8"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flood_fill"]
